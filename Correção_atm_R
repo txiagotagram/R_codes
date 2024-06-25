@@ -1,0 +1,32 @@
+wd <- setwd("D:/Imagens de Satelite/LC08_L1TP_214064_20240507_20240514_02_T1")
+getwd()
+PkgToLoad <- c("raster", "ggplot2", "devtools", "terra", "sf")
+
+lapply(PkgToLoad, library, character.only = TRUE)
+install.packages("RStoolbox")
+
+library("RStoolbox")
+
+metaData <- readMeta("D:/Imagens de Satelite/LC08_L1TP_214064_20240507_20240514_02_T1/LC08_L1TP_214064_20240507_20240514_02_T1_MTL.txt")
+
+# Stack the metadata bands
+lsMeta <- stackMeta(metaData)
+
+# Correct DN to at-surface-reflecatance with DOS (Chavez decay model)
+l8_boa_ref <- radCor(lsMeta, metaData, method = "dos")
+
+# Export raster to folder
+writeRaster(l8_boa_ref, datatype="FLT4S", filename = "D:/Imagens de Satelite/cu.tif", overwrite=TRUE)
+l8_boa_br <- brick("D:/Imagens de Satelite/cu.tif")
+
+
+aoi <- shapefile("C:/Users/Thiago/OneDrive/Banco de Dados Geográficos/Rio Grande do Norte/_CIDADE DE NATAL/Limites de bairros de Natal/Limite de Bairros.shp")
+crs(aoi)
+crs(l8_boa_br)
+aoi <- spTransform(aoi, crs(l8_boa_br))
+l8_boa_cr <- crop(l8_boa_br, aoi)
+
+writeRaster(l8_boa_cr, datatype="FLT4S", filename = "D:/Imagens de Satelite/cu_atm.tif", overwritte=TRUE)
+
+plotRGB(l8_boa_cr, r=4, g=3, b=2, axes=TRUE, stretch="lin", main = 
+          "Bottom of Atmosphere Reflectance. Landsat 8")
